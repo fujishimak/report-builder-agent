@@ -10,6 +10,7 @@ from langchain_core.prompts import (
 )
 from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 from pydantic import BaseModel
@@ -20,6 +21,7 @@ from src.prompts import (
     get_intent_classification_prompt,
 )
 from src.schemas import (
+    ALLOWED_GRAPH_SCHEMAS,
     AnswerResponse,
     CalculationResponse,
     SummarizationResponse,
@@ -301,6 +303,11 @@ def create_workflow(llm, tools):
     workflow.add_edge("calculation_agent", "update_memory")
     workflow.add_edge("update_memory", END)
 
+    # Initialise a serialiser for use with the schemas that we have mainlisted
+    custom_serialiser = JsonPlusSerializer(
+        allowed_msgpack_modules=ALLOWED_GRAPH_SCHEMAS
+    )
+
     # TODO Modify the return values below by adding a checkpointer with InMemorySaver
-    checkpointer = InMemorySaver()
+    checkpointer = InMemorySaver(serde=custom_serialiser)
     return workflow.compile(checkpointer=checkpointer)

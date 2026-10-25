@@ -3,7 +3,16 @@ from typing import Any, Literal, TypedDict
 
 from pydantic import BaseModel, Field
 
+ALLOWED_GRAPH_SCHEMAS = []
 
+
+def register_schema(cls):
+    """Automatically logs theclass for LangGraph msgpack serialisation"""
+    ALLOWED_GRAPH_SCHEMAS.append((cls.__module__, cls.__name__))
+    return cls
+
+
+@register_schema
 class DocumentChunk(BaseModel):
     """Represents a chunk of document content"""
 
@@ -20,6 +29,7 @@ class DocumentChunk(BaseModel):
 # TODO: Implement the AnswerResponse schema for structured Q&A responses.
 # This schema should include fields for the question, answer, sources, confidence, and timestamp.
 # Refer to README.md Task 1.1 for detailed field requirements.
+@register_schema
 class AnswerResponse(BaseModel):
     """Structured response for Q&A tasks"""
 
@@ -30,6 +40,7 @@ class AnswerResponse(BaseModel):
     timestamp: datetime = Field(description="When the response was generated")
 
 
+@register_schema
 class SummarizationResponse(BaseModel):
     """Structured response for summarization tasks"""
 
@@ -42,6 +53,7 @@ class SummarizationResponse(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.now)
 
 
+@register_schema
 class CalculationResponse(BaseModel):
     """Structured response for calculation tasks"""
 
@@ -52,6 +64,7 @@ class CalculationResponse(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.now)
 
 
+@register_schema
 class UpdateMemoryResponse(BaseModel):
     """Response after updating memory"""
 
@@ -65,6 +78,7 @@ class UpdateMemoryResponse(BaseModel):
 # TODO: Implement the UserIntent schema for intent classification.
 # This schema should include fields for intent_type, confidence, and reasoning.
 # Refer to README.md Task 1.2 for detailed field requirements.
+@register_schema
 class UserIntent(BaseModel):
     """User intent classification - TO BE IMPLEMENTED"""
 
@@ -75,6 +89,7 @@ class UserIntent(BaseModel):
     reasoning: str = Field(description="Explanation for the classification")
 
 
+@register_schema
 class SessionState(BaseModel):
     """Session state"""
 
