@@ -96,16 +96,16 @@ def classify_intent(state: AgentState, config: RunnableConfig) -> AgentState:
     structured_llm = llm.with_structured_output(UserIntent)
 
     # TODO Create a formatted prompt with conversation history and user input
-    prompt = get_intent_classification_prompt().invoke(
+    prompt = get_intent_classification_prompt()
+
+    chain = prompt | structured_llm
+
+    intent_type = chain.invoke(
         {
             "user_input": state.get("user_input"),
             "conversation_history": state.get("messages"),
         }
-    )
-
-    chain = prompt | structured_llm
-
-    intent_type = chain.invoke().get("intent_type", "")
+    ).intent_type
 
     match intent_type:
         case "qa":
@@ -223,14 +223,14 @@ def calculation_agent(state: AgentState, config: RunnableConfig) -> AgentState:
 
 
 # TODO: Finish implementing the update_memory function. Refer to README.md Task 2.4
-def update_memory(state: AgentState) -> AgentState:
+def update_memory(state: AgentState, config: RunnableConfig) -> AgentState:
     """
     Update conversation memory and record the action.
     """
 
     # TODO: Retrieve the LLM from config
 
-    llm = state.get("configurable", {}).get("llm")
+    llm = config.get("configurable", {}).get("llm")
 
     prompt_with_history = ChatPromptTemplate.from_messages(
         [
@@ -252,12 +252,8 @@ def update_memory(state: AgentState) -> AgentState:
     return cast(
         AgentState,
         {
-            "conversation_summary": response[
-                "summary"
-            ],  # TODO: Extract summary from response
-            "active_documents": response[
-                "document_ids"
-            ],  # TODO: Update with the current active documents
+            "conversation_summary": response.summary,  # TODO: Extract summary from response
+            "active_documents": response.document_ids,  # TODO: Update with the current active documents
             "next_step": END,  # TODO: Update the next step to end
         },
     )

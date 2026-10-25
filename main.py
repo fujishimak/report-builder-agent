@@ -1,11 +1,11 @@
 import os
 import sys
-from datetime import datetime
+
 from dotenv import load_dotenv
 from print_color import print
 
 # Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 from src.assistant import DocumentAssistant
 
@@ -13,13 +13,13 @@ from src.assistant import DocumentAssistant
 def print_header():
     """Print a nice header"""
     print("\n" + "=" * 60)
-    print("DocDacity Intelligent Document Assistant", color='blue')
+    print("DocDacity Intelligent Document Assistant", color="blue")
     print("=" * 60 + "\n")
 
 
 def print_help():
     """Print help information"""
-    print("\nAVAILABLE COMMANDS:", color='blue')
+    print("\nAVAILABLE COMMANDS:", color="blue")
     print("  /help     - Show this help message")
     print("  /docs     - List available documents")
     print("  /quit     - Exit the assistant")
@@ -33,18 +33,18 @@ def print_help():
 
 def list_documents(assistant: DocumentAssistant):
     """List all available documents"""
-    print("\nAVAILABLE DOCUMENTS:", color='blue')
+    print("\nAVAILABLE DOCUMENTS:", color="blue")
     print("-" * 40)
 
     for doc_id, doc in assistant.retriever.documents.items():
         print(f"ID: {doc_id}")
         print(f"Title: {doc.title}")
         print(f"Type: {doc.doc_type}")
-        if 'total' in doc.metadata:
+        if "total" in doc.metadata:
             print(f"Total: ${doc.metadata['total']:,.2f}")
-        elif 'amount' in doc.metadata:
+        elif "amount" in doc.metadata:
             print(f"Amount: ${doc.metadata['amount']:,.2f}")
-        elif 'value' in doc.metadata:
+        elif "value" in doc.metadata:
             print(f"Value: ${doc.metadata['value']:,.2f}")
         print("-" * 40)
 
@@ -65,15 +65,16 @@ def main():
     print_header()
 
     # Create assistant
-    print(" INITIALIZING ASSISTANT...", color='green')
+    print(" INITIALIZING ASSISTANT...", color="green")
     assistant = DocumentAssistant(
-        openai_api_key=api_key,
-        model_name="gpt-4o",
-        temperature=0.1
+        openai_api_key=api_key, model_name="gpt-4o", temperature=0.1
     )
 
     # Start session
-    user_id = input("Enter your user ID (or press Enter for 'demo_user'): ").strip() or "demo_user"
+    user_id = (
+        input("Enter your user ID (or press Enter for 'demo_user'): ").strip()
+        or "demo_user"
+    )
     session_id = assistant.start_session(user_id)
     print(f"Session started: {session_id}")
 
@@ -91,7 +92,7 @@ def main():
 
             # Handle commands
             if user_input.lower() == "/quit":
-                print("\nGoodbye!", color='blue')
+                print("\nGoodbye!", color="blue")
                 break
             elif user_input.lower() == "/help":
                 print_help()
@@ -101,7 +102,7 @@ def main():
                 continue
 
             # Process the message
-            print("\nProcessing...", color='yellow')
+            print("\nProcessing...", color="yellow")
             result = assistant.process_message(user_input)
 
             if result["success"]:
@@ -111,23 +112,28 @@ def main():
                     print(result["response"])
                 if result.get("intent"):
                     intent = result["intent"]
-                    print(f"\nINTENT: {intent['intent_type']}", color='green')
+                    print(f"\nINTENT: {intent}", color="green")
                 if result.get("active_documents"):
-                    print(f"\nSOURCES: {', '.join(result['active_documents'])}", color='blue')
+                    print(
+                        f"\nSOURCES: {', '.join(result['active_documents'])}",
+                        color="blue",
+                    )
                 if result.get("tools_used"):
-                    print(f"\nTOOLS USED: {', '.join(result['tools_used'])}", color='magenta')
+                    print(
+                        f"\nTOOLS USED: {', '.join(result['tools_used'])}",
+                        color="magenta",
+                    )
                 if result.get("summary"):
-                    print(f"\nCONVERSATION SUMMARY: {result['summary']}", color='cyan')
-
+                    print(f"\nCONVERSATION SUMMARY: {result['summary']}", color="cyan")
 
             else:
-                print(f"\nError: {result.get('error', 'Unknown error')}", color='red')
+                print(f"\nError: {result.get('error', 'Unknown error')}", color="red")
 
         except KeyboardInterrupt:
-            print("\n\nGoodbye!", color='blue')
+            print("\n\nGoodbye!", color="blue")
             break
         except Exception as e:
-            print(f"\nUnexpected error: {str(e)}", color='red')
+            print(f"\nUnexpected error: {e!s}", color="red")
 
 
 if __name__ == "__main__":

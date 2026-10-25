@@ -1,18 +1,19 @@
-import json
-from typing import List, Dict, Any, Optional, Tuple
-from dataclasses import dataclass
 import re
+from dataclasses import dataclass
+from typing import Any
+
 from schemas import DocumentChunk
 
 
 @dataclass
 class Document:
     """Represents a document in our system"""
+
     doc_id: str
     title: str
     content: str
     doc_type: str  # 'invoice', 'contract', 'claim'
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 class SimulatedRetriever:
@@ -21,7 +22,7 @@ class SimulatedRetriever:
     """
 
     def __init__(self):
-        self.documents: Dict[str, Document] = {}
+        self.documents: dict[str, Document] = {}
         self._load_sample_documents()
 
     def _load_sample_documents(self):
@@ -46,7 +47,7 @@ class SimulatedRetriever:
                 Payment Terms: Net 30 days
                 """,
                 doc_type="invoice",
-                metadata={"client": "Acme Corporation", "date": "2024-01-15"}
+                metadata={"client": "Acme Corporation", "date": "2024-01-15"},
             ),
             Document(
                 doc_id="CON-001",
@@ -71,7 +72,11 @@ class SimulatedRetriever:
                 Termination: Either party may terminate with 60 days written notice.
                 """,
                 doc_type="contract",
-                metadata={"value": 180000, "duration_months": 12, "client": "Healthcare Partners LLC"}
+                metadata={
+                    "value": 180000,
+                    "duration_months": 12,
+                    "client": "Healthcare Partners LLC",
+                },
             ),
             Document(
                 doc_id="CLM-001",
@@ -96,7 +101,11 @@ class SimulatedRetriever:
                 Status: Under Review
                 """,
                 doc_type="claim",
-                metadata={"amount": 2450, "status": "Under Review", "claimant": "John Doe"}
+                metadata={
+                    "amount": 2450,
+                    "status": "Under Review",
+                    "claimant": "John Doe",
+                },
             ),
             Document(
                 doc_id="INV-002",
@@ -119,7 +128,11 @@ class SimulatedRetriever:
                 Payment Terms: Net 45 days
                 """,
                 doc_type="invoice",
-                metadata={"total": 69300, "client": "TechStart Inc.", "date": "2024-02-20"}
+                metadata={
+                    "total": 69300,
+                    "client": "TechStart Inc.",
+                    "date": "2024-02-20",
+                },
             ),
             Document(
                 doc_id="INV-003",
@@ -141,8 +154,12 @@ class SimulatedRetriever:
                 Payment Terms: Net 60 days
                 """,
                 doc_type="invoice",
-                metadata={"total": 214500, "client": "Global Corp", "date": "2024-03-01"}
-            )
+                metadata={
+                    "total": 214500,
+                    "client": "Global Corp",
+                    "date": "2024-03-01",
+                },
+            ),
         ]
 
         for doc in sample_docs:
@@ -152,13 +169,13 @@ class SimulatedRetriever:
         """Add a document to the retriever"""
         self.documents[document.doc_id] = document
 
-    def _get_document_amount(self, doc: Document) -> Optional[float]:
+    def _get_document_amount(self, doc: Document) -> float | None:
         """
         Extract the amount from a document's metadata.
         Checks multiple possible fields for flexibility.
         """
         # Priority order for amount fields
-        amount_fields = ['total', 'amount', 'value', 'total_amount', 'total_value']
+        amount_fields = ["total", "amount", "value", "total_amount", "total_value"]
 
         for field in amount_fields:
             if field in doc.metadata and doc.metadata[field] is not None:
@@ -169,23 +186,25 @@ class SimulatedRetriever:
 
         return None
 
-    def retrieve_all(self) -> List[DocumentChunk]:
+    def retrieve_all(self) -> list[DocumentChunk]:
         """Retrieve all documents as DocumentChunks"""
         results = []
         for doc in self.documents.values():
-            results.append(DocumentChunk(
-                doc_id=doc.doc_id,
-                content=doc.content,
-                metadata={
-                    "title": doc.title,
-                    "doc_type": doc.doc_type,
-                    **doc.metadata
-                },
-                relevance_score=1.0
-            ))
+            results.append(
+                DocumentChunk(
+                    doc_id=doc.doc_id,
+                    content=doc.content,
+                    metadata={
+                        "title": doc.title,
+                        "doc_type": doc.doc_type,
+                        **doc.metadata,
+                    },
+                    relevance_score=1.0,
+                )
+            )
         return results
 
-    def retrieve_by_keyword(self, query: str, top_k: int = 3) -> List[DocumentChunk]:
+    def retrieve_by_keyword(self, query: str, top_k: int = 3) -> list[DocumentChunk]:
         """
         Simple keyword-based retrieval
         """
@@ -211,43 +230,45 @@ class SimulatedRetriever:
                         score += 1.0
 
             if score > 0:
-                results.append(DocumentChunk(
-                    doc_id=doc.doc_id,
-                    content=doc.content,
-                    metadata={
-                        "title": doc.title,
-                        "doc_type": doc.doc_type,
-                        **doc.metadata
-                    },
-                    relevance_score=score
-                ))
+                results.append(
+                    DocumentChunk(
+                        doc_id=doc.doc_id,
+                        content=doc.content,
+                        metadata={
+                            "title": doc.title,
+                            "doc_type": doc.doc_type,
+                            **doc.metadata,
+                        },
+                        relevance_score=score,
+                    )
+                )
 
         # Sort by relevance and return top_k
         results.sort(key=lambda x: x.relevance_score, reverse=True)
         return results[:top_k]
 
-    def retrieve_by_type(self, doc_type: str) -> List[DocumentChunk]:
+    def retrieve_by_type(self, doc_type: str) -> list[DocumentChunk]:
         """Retrieve all documents of a specific type"""
         results = []
         for doc in self.documents.values():
             if doc.doc_type.lower() == doc_type.lower():
-                results.append(DocumentChunk(
-                    doc_id=doc.doc_id,
-                    content=doc.content,
-                    metadata={
-                        "title": doc.title,
-                        "doc_type": doc.doc_type,
-                        **doc.metadata
-                    },
-                    relevance_score=1.0
-                ))
+                results.append(
+                    DocumentChunk(
+                        doc_id=doc.doc_id,
+                        content=doc.content,
+                        metadata={
+                            "title": doc.title,
+                            "doc_type": doc.doc_type,
+                            **doc.metadata,
+                        },
+                        relevance_score=1.0,
+                    )
+                )
         return results
 
     def retrieve_by_amount_range(
-            self,
-            min_amount: Optional[float] = None,
-            max_amount: Optional[float] = None
-    ) -> List[DocumentChunk]:
+        self, min_amount: float | None = None, max_amount: float | None = None
+    ) -> list[DocumentChunk]:
         """
         Retrieve documents within a specific amount range.
         Now supports:
@@ -275,22 +296,28 @@ class SimulatedRetriever:
                     matches = False
 
                 if matches:
-                    results.append(DocumentChunk(
-                        doc_id=doc.doc_id,
-                        content=doc.content,
-                        metadata={
-                            "title": doc.title,
-                            "doc_type": doc.doc_type,
-                            **doc.metadata
-                        },
-                        relevance_score=1.0
-                    ))
+                    results.append(
+                        DocumentChunk(
+                            doc_id=doc.doc_id,
+                            content=doc.content,
+                            metadata={
+                                "title": doc.title,
+                                "doc_type": doc.doc_type,
+                                **doc.metadata,
+                            },
+                            relevance_score=1.0,
+                        )
+                    )
 
         # Sort by amount for better organization
-        results.sort(key=lambda x: self._get_document_amount_from_chunk(x), reverse=True)
+        results.sort(
+            key=lambda x: self._get_document_amount_from_chunk(x), reverse=True
+        )
         return results
 
-    def retrieve_by_exact_amount(self, amount: float, tolerance: float = 0.01) -> List[DocumentChunk]:
+    def retrieve_by_exact_amount(
+        self, amount: float, tolerance: float = 0.01
+    ) -> list[DocumentChunk]:
         """
         Retrieve documents with an exact amount (with small tolerance for float comparison).
         """
@@ -299,24 +326,24 @@ class SimulatedRetriever:
             doc_amount = self._get_document_amount(doc)
 
             if doc_amount is not None and abs(doc_amount - amount) <= tolerance:
-                results.append(DocumentChunk(
-                    doc_id=doc.doc_id,
-                    content=doc.content,
-                    metadata={
-                        "title": doc.title,
-                        "doc_type": doc.doc_type,
-                        **doc.metadata
-                    },
-                    relevance_score=1.0
-                ))
+                results.append(
+                    DocumentChunk(
+                        doc_id=doc.doc_id,
+                        content=doc.content,
+                        metadata={
+                            "title": doc.title,
+                            "doc_type": doc.doc_type,
+                            **doc.metadata,
+                        },
+                        relevance_score=1.0,
+                    )
+                )
 
         return results
 
     def retrieve_by_approximate_amount(
-            self,
-            amount: float,
-            percentage: float = 10.0
-    ) -> List[DocumentChunk]:
+        self, amount: float, percentage: float = 10.0
+    ) -> list[DocumentChunk]:
         """
         Retrieve documents with amounts approximately equal to the target.
         Default tolerance is ±10%.
@@ -332,31 +359,35 @@ class SimulatedRetriever:
             if doc_amount is not None and min_amount <= doc_amount <= max_amount:
                 # Calculate relevance based on how close the amount is
                 distance = abs(doc_amount - amount)
-                relevance = 1.0 - (distance / tolerance)  # Closer amounts get higher scores
+                relevance = 1.0 - (
+                    distance / tolerance
+                )  # Closer amounts get higher scores
 
-                results.append(DocumentChunk(
-                    doc_id=doc.doc_id,
-                    content=doc.content,
-                    metadata={
-                        "title": doc.title,
-                        "doc_type": doc.doc_type,
-                        **doc.metadata
-                    },
-                    relevance_score=relevance
-                ))
+                results.append(
+                    DocumentChunk(
+                        doc_id=doc.doc_id,
+                        content=doc.content,
+                        metadata={
+                            "title": doc.title,
+                            "doc_type": doc.doc_type,
+                            **doc.metadata,
+                        },
+                        relevance_score=relevance,
+                    )
+                )
 
         # Sort by relevance (closest amounts first)
         results.sort(key=lambda x: x.relevance_score, reverse=True)
         return results
 
     def retrieve_by_amount(
-            self,
-            query: str,
-            comparison_type: Optional[str] = None,
-            amount: Optional[float] = None,
-            min_amount: Optional[float] = None,
-            max_amount: Optional[float] = None
-    ) -> List[DocumentChunk]:
+        self,
+        query: str,
+        comparison_type: str | None = None,
+        amount: float | None = None,
+        min_amount: float | None = None,
+        max_amount: float | None = None,
+    ) -> list[DocumentChunk]:
         """
         Flexible amount-based retrieval that understands natural language queries.
 
@@ -378,75 +409,89 @@ class SimulatedRetriever:
             elif comparison_type in ["approximate", "around", "about", "roughly"]:
                 return self.retrieve_by_approximate_amount(amount)
             elif comparison_type in ["between", "range"]:
-                return self.retrieve_by_amount_range(min_amount=min_amount, max_amount=max_amount)
+                return self.retrieve_by_amount_range(
+                    min_amount=min_amount, max_amount=max_amount
+                )
 
         # Otherwise, try to parse the query
         return self._parse_and_retrieve_by_amount(query)
 
-    def _parse_and_retrieve_by_amount(self, query: str) -> List[DocumentChunk]:
+    def _parse_and_retrieve_by_amount(self, query: str) -> list[DocumentChunk]:
         """
         Parse natural language amount queries and retrieve accordingly.
         """
         query_lower = query.lower()
 
         # Extract amounts from query
-        amount_pattern = r'\$?(\d+(?:,\d{3})*(?:\.\d{2})?)'
-        amounts = [float(m.replace(',', '').replace('$', '')) for m in re.findall(amount_pattern, query)]
+        amount_pattern = r"\$?(\d+(?:,\d{3})*(?:\.\d{2})?)"
+        amounts = [
+            float(m.replace(",", "").replace("$", ""))
+            for m in re.findall(amount_pattern, query)
+        ]
 
         # Check for comparison keywords
-        if any(word in query_lower for word in ['over', 'above', 'more than', 'greater than', '>']):
+        if any(
+            word in query_lower
+            for word in ["over", "above", "more than", "greater than", ">"]
+        ):
             if amounts:
                 return self.retrieve_by_amount_range(min_amount=amounts[0])
 
-        elif any(word in query_lower for word in ['under', 'below', 'less than', '<']):
+        elif any(word in query_lower for word in ["under", "below", "less than", "<"]):
             if amounts:
                 return self.retrieve_by_amount_range(max_amount=amounts[0])
 
-        elif any(word in query_lower for word in ['between', 'range', 'from']):
+        elif any(word in query_lower for word in ["between", "range", "from"]):
             if len(amounts) >= 2:
                 return self.retrieve_by_amount_range(
                     min_amount=min(amounts[0], amounts[1]),
-                    max_amount=max(amounts[0], amounts[1])
+                    max_amount=max(amounts[0], amounts[1]),
                 )
 
-        elif any(word in query_lower for word in ['around', 'about', 'approximately', 'roughly', '~']):
+        elif any(
+            word in query_lower
+            for word in ["around", "about", "approximately", "roughly", "~"]
+        ):
             if amounts:
                 return self.retrieve_by_approximate_amount(amounts[0])
 
-        elif any(word in query_lower for word in ['exactly', 'exact', 'precisely', '=']):
+        elif any(
+            word in query_lower for word in ["exactly", "exact", "precisely", "="]
+        ):
             if amounts:
                 return self.retrieve_by_exact_amount(amounts[0])
 
         # Default: if amounts mentioned, look for documents containing those amounts
         if amounts:
             return self.retrieve_by_amount_range(
-                min_amount=min(amounts) * 0.9,
-                max_amount=max(amounts) * 1.1
+                min_amount=min(amounts) * 0.9, max_amount=max(amounts) * 1.1
             )
 
         # Fallback to keyword search
         return self.retrieve_by_keyword(query)
 
-    def _retrieve_all_with_amounts(self) -> List[DocumentChunk]:
+    def _retrieve_all_with_amounts(self) -> list[DocumentChunk]:
         """Retrieve all documents that have amount information"""
         results = []
         for doc in self.documents.values():
             if self._get_document_amount(doc) is not None:
-                results.append(DocumentChunk(
-                    doc_id=doc.doc_id,
-                    content=doc.content,
-                    metadata={
-                        "title": doc.title,
-                        "doc_type": doc.doc_type,
-                        **doc.metadata
-                    },
-                    relevance_score=1.0
-                ))
+                results.append(
+                    DocumentChunk(
+                        doc_id=doc.doc_id,
+                        content=doc.content,
+                        metadata={
+                            "title": doc.title,
+                            "doc_type": doc.doc_type,
+                            **doc.metadata,
+                        },
+                        relevance_score=1.0,
+                    )
+                )
         return results
 
     def _get_document_amount_from_chunk(self, chunk: DocumentChunk) -> float:
         """Extract amount from a DocumentChunk for sorting"""
-        amount_fields = ['total', 'amount', 'value', 'total_amount', 'total_value']
+        amount_fields = ["total", "amount", "value", "total_amount", "total_value"]
 
         for field in amount_fields:
             if field in chunk.metadata:
@@ -457,23 +502,19 @@ class SimulatedRetriever:
 
         return 0.0
 
-    def get_document_by_id(self, doc_id: str) -> Optional[DocumentChunk]:
+    def get_document_by_id(self, doc_id: str) -> DocumentChunk | None:
         """Retrieve a specific document by ID"""
         if doc_id in self.documents:
             doc = self.documents[doc_id]
             return DocumentChunk(
                 doc_id=doc.doc_id,
                 content=doc.content,
-                metadata={
-                    "title": doc.title,
-                    "doc_type": doc.doc_type,
-                    **doc.metadata
-                },
-                relevance_score=1.0
+                metadata={"title": doc.title, "doc_type": doc.doc_type, **doc.metadata},
+                relevance_score=1.0,
             )
         return None
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """
         Get statistics about the document collection.
         """
@@ -498,8 +539,10 @@ class SimulatedRetriever:
             "total_documents": total_docs,
             "documents_with_amounts": docs_with_amounts,
             "total_amount": total_amount,
-            "average_amount": total_amount / docs_with_amounts if docs_with_amounts > 0 else 0,
-            "document_types": doc_types
+            "average_amount": total_amount / docs_with_amounts
+            if docs_with_amounts > 0
+            else 0,
+            "document_types": doc_types,
         }
 
         if amounts:

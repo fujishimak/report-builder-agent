@@ -160,7 +160,7 @@ class DocumentAssistant:
                 "response": final_state.get("messages")[-1].content
                 if final_state.get("messages")
                 else None,
-                "intent": final_state.get("intent").dict()
+                "intent": final_state.get("intent")
                 if final_state.get("intent")
                 else None,
                 "tools_used": final_state.get("tools_used", []),

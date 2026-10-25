@@ -70,6 +70,15 @@ def create_calculator_tool(logger: ToolLogger):
 
     @tool
     def calculator(expression: str) -> str:
+        """
+        Evaluate a mathematical expression and provide the output.
+
+        Args:
+            expression: A string representation of the mathematical operation to be performed
+
+        Returns:
+            The output value of the expression or -1 if the expression is invalid
+        """
         # Block unsafe globals like import
         clean_globals = {"__builtins__": None}
 
