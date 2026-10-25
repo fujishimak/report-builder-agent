@@ -1,6 +1,7 @@
 import operator
 from typing import Annotated, Any, TypedDict, cast
 
+from langchain.agents import create_agent  # create_react_agent is now deprecated
 from langchain_core.messages import BaseMessage, ToolMessage
 from langchain_core.prompts import (
     ChatPromptTemplate,
@@ -62,10 +63,10 @@ class AgentState(TypedDict):
 
 def invoke_react_agent(
     response_schema: type[BaseModel], messages: list[BaseMessage], llm, tools
-) -> (dict[str, Any], list[str]):
+) -> tuple[dict[str, Any], list[str]]:
     llm_with_tools = llm.bind_tools(tools)
 
-    agent = create_react_agent(
+    agent = create_agent(
         model=llm_with_tools,  # Use the bound model
         tools=tools,
         response_format=response_schema,
@@ -76,7 +77,7 @@ def invoke_react_agent(
         t.name for t in result.get("messages", []) if isinstance(t, ToolMessage)
     ]
 
-    return result, tools_used
+    return (result, tools_used)
 
 
 # TODO: Implement the classify_intent function.
