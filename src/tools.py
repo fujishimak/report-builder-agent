@@ -3,34 +3,35 @@ Tool definitions for the agent using @tool decorator
 Think of these as the agent's Swiss Army knife 🔧 - each tool has a specific purpose!
 """
 
-from typing import Dict, Any, List, Optional, Literal
-from langchain.tools import tool
-from pydantic import BaseModel, Field
-import re
 import json
+import re
 from datetime import datetime
+from typing import Any, Literal
+
+from langchain.tools import tool
 
 
 class ToolLogger:
     """Logs tool usage with automatic persistence"""
 
-    def __init__(self, logs_dir: str = "./logs", session_id: str = None):
+    def __init__(self, logs_dir: str = "./logs", session_id: str = ""):
         self.logs = []
         self.logs_dir = logs_dir
         self.session_id = session_id
 
         # Make sure logs directory exists
         import os
+
         os.makedirs(logs_dir, exist_ok=True)
 
         # Create session-specific log file if session_id provided
         if session_id:
             self.log_file = os.path.join(logs_dir, f"session_{session_id}.json")
         else:
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             self.log_file = os.path.join(logs_dir, f"tool_usage_{timestamp}.json")
 
-    def log_tool_use(self, tool_name: str, input_data: Dict[str, Any], output: Any):
+    def log_tool_use(self, tool_name: str, input_data: dict[str, Any], output: Any):
         log_entry = {
             "timestamp": datetime.now().isoformat(),
             "tool_name": tool_name,
@@ -46,16 +47,16 @@ class ToolLogger:
     def _auto_save(self):
         """Automatically save logs to persistent file"""
         try:
-            with open(self.log_file, 'w') as f:
+            with open(self.log_file, "w") as f:
                 json.dump(self.logs, f, indent=2)
         except Exception as e:
             print(f"Warning: Failed to auto-save logs: {e}")
 
-    def get_logs(self) -> List[Dict[str, Any]]:
+    def get_logs(self) -> list[dict[str, Any]]:
         return self.logs
 
     def save_logs(self, filepath: str):
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             json.dump(self.logs, f, indent=2)
 
 
@@ -64,10 +65,37 @@ class ToolLogger:
 # Refer to README.md Task 4.1 for detailed implementation requirements.
 def create_calculator_tool(logger: ToolLogger):
     """
-    Creates a calculator tool - TO BE IMPLEMENTED
+    Creates a calculator tool
     """
-    # Your implementation here
-    pass
+
+    @tool
+    def calculator(expression: str) -> str:
+        # Block unsafe globals like import
+        clean_globals = {"__builtins__": None}
+
+        # Allow only numbers, basic math operators and spaces
+        if re.match(r"^[\d\s.+\-*/()]+$", expression):
+            result = eval(expression, clean_globals)
+            logger.log_tool_use(
+                tool_name="calculator",
+                input_data={"expression": expression},
+                output={"result": result, "success": True, "msg": ""},
+            )
+        else:
+            result = -1
+            logger.log_tool_use(
+                tool_name="calculator",
+                input_data={"expression": expression},
+                output={
+                    "result": result,
+                    "success": False,
+                    "msg": "Invalid mathematical expression",
+                },
+            )
+
+        return str(result)
+
+    return calculator
 
 
 def create_document_search_tool(retriever, logger: ToolLogger):
@@ -77,13 +105,16 @@ def create_document_search_tool(retriever, logger: ToolLogger):
 
     @tool
     def document_search(
-            query: str,
-            search_type: Literal["keyword", "type", "amount", "amount_range", "all"] = "keyword",
-            doc_type: Optional[str] = None,
-            min_amount: Optional[float] = None,
-            max_amount: Optional[float] = None,
-            comparison: Optional[Literal["over", "under", "between", "exact", "approximate"]] = None,
-            amount: Optional[float] = None
+        query: str,
+        search_type: Literal[
+            "keyword", "type", "amount", "amount_range", "all"
+        ] = "keyword",
+        doc_type: str | None = None,
+        min_amount: float | None = None,
+        max_amount: float | None = None,
+        comparison: Literal["over", "under", "between", "exact", "approximate"]
+        | None = None,
+        amount: float | None = None,
     ) -> str:
         """
         Search for relevant documents using various criteria. Handles natural language amount queries.
@@ -137,12 +168,25 @@ def create_document_search_tool(retriever, logger: ToolLogger):
                 query_lower = query.lower()
 
                 # Check if it's an amount query
-                if any(word in query_lower for word in
-                       ['over', 'under', 'above', 'below', 'between', 'around', 'exactly', '$']):
+                if any(
+                    word in query_lower
+                    for word in [
+                        "over",
+                        "under",
+                        "above",
+                        "below",
+                        "between",
+                        "around",
+                        "exactly",
+                        "$",
+                    ]
+                ):
                     results = retriever._parse_and_retrieve_by_amount(query)
                 # Check if it's a type query
-                elif any(word in query_lower for word in ['invoice', 'contract', 'claim']):
-                    for doc_type in ['invoice', 'contract', 'claim']:
+                elif any(
+                    word in query_lower for word in ["invoice", "contract", "claim"]
+                ):
+                    for doc_type in ["invoice", "contract", "claim"]:
                         if doc_type in query_lower:
                             results = retriever.retrieve_by_type(doc_type)
                             break
@@ -162,13 +206,13 @@ def create_document_search_tool(retriever, logger: ToolLogger):
 
                     # Include amount information if available
                     amount_value = None
-                    for field in ['total', 'amount', 'value']:
+                    for field in ["total", "amount", "value"]:
                         if field in chunk.metadata:
                             amount_value = chunk.metadata[field]
                             formatted += f"Amount: ${amount_value:,.2f}\n"
                             break
 
-                    if hasattr(chunk, 'relevance_score'):
+                    if hasattr(chunk, "relevance_score"):
                         formatted += f"Relevance Score: {chunk.relevance_score:.2f}\n"
 
                     formatted += f"Preview: {chunk.content[:200]}...\n"
@@ -184,23 +228,25 @@ def create_document_search_tool(retriever, logger: ToolLogger):
                     "min_amount": min_amount,
                     "max_amount": max_amount,
                     "comparison": comparison,
-                    "amount": amount
+                    "amount": amount,
                 },
-                {"results_count": len(results)}
+                {"results_count": len(results)},
             )
 
             return formatted
 
         except Exception as e:
-            error_msg = f"Error searching documents: {str(e)}"
+            error_msg = f"Error searching documents: {e!s}"
             logger.log_tool_use(
                 "document_search",
                 {"query": query, "search_type": search_type},
-                {"error": error_msg}
+                {"error": error_msg},
             )
             return error_msg
 
-    def _handle_amount_search(retriever, comparison, amount, min_amount, max_amount, query):
+    def _handle_amount_search(
+        retriever, comparison, amount, min_amount, max_amount, query
+    ):
         """Helper function to handle amount-based searches"""
         if comparison:
             if comparison == "over" and amount is not None:
@@ -211,12 +257,20 @@ def create_document_search_tool(retriever, logger: ToolLogger):
                 return retriever.retrieve_by_exact_amount(amount)
             elif comparison == "approximate" and amount is not None:
                 return retriever.retrieve_by_approximate_amount(amount)
-            elif comparison == "between" and min_amount is not None and max_amount is not None:
-                return retriever.retrieve_by_amount_range(min_amount=min_amount, max_amount=max_amount)
+            elif (
+                comparison == "between"
+                and min_amount is not None
+                and max_amount is not None
+            ):
+                return retriever.retrieve_by_amount_range(
+                    min_amount=min_amount, max_amount=max_amount
+                )
 
         # Handle direct min/max specifications
         if min_amount is not None or max_amount is not None:
-            return retriever.retrieve_by_amount_range(min_amount=min_amount, max_amount=max_amount)
+            return retriever.retrieve_by_amount_range(
+                min_amount=min_amount, max_amount=max_amount
+            )
 
         # Try parsing from query
         return retriever._parse_and_retrieve_by_amount(query)
@@ -248,7 +302,7 @@ def create_document_reader_tool(retriever, logger: ToolLogger):
             if doc:
                 # Include amount information in the output
                 amount_info = ""
-                for field in ['total', 'amount', 'value']:
+                for field in ["total", "amount", "value"]:
                     if field in doc.metadata:
                         amount_info = f"\nAmount: ${doc.metadata[field]:,.2f}"
                         break
@@ -257,22 +311,18 @@ def create_document_reader_tool(retriever, logger: ToolLogger):
                 logger.log_tool_use(
                     "document_reader",
                     {"doc_id": doc_id},
-                    {"found": True, "doc_type": doc.metadata.get('doc_type')}
+                    {"found": True, "doc_type": doc.metadata.get("doc_type")},
                 )
                 return result
             else:
                 logger.log_tool_use(
-                    "document_reader",
-                    {"doc_id": doc_id},
-                    {"found": False}
+                    "document_reader", {"doc_id": doc_id}, {"found": False}
                 )
                 return f"Document with ID {doc_id} not found."
         except Exception as e:
-            error_msg = f"Error reading document: {str(e)}"
+            error_msg = f"Error reading document: {e!s}"
             logger.log_tool_use(
-                "document_reader",
-                {"doc_id": doc_id},
-                {"error": error_msg}
+                "document_reader", {"doc_id": doc_id}, {"error": error_msg}
             )
             return error_msg
 
@@ -298,39 +348,31 @@ def create_document_statistics_tool(retriever, logger: ToolLogger):
             formatted = "DOCUMENT COLLECTION STATISTICS:\n\n"
             formatted += f"Total Documents: {stats['total_documents']}\n"
             formatted += f"Documents with Amounts: {stats['documents_with_amounts']}\n"
-            formatted += f"\nDocument Types:\n"
+            formatted += "\nDocument Types:\n"
 
-            for doc_type, count in stats['document_types'].items():
+            for doc_type, count in stats["document_types"].items():
                 formatted += f"  - {doc_type.capitalize()}: {count}\n"
 
-            if stats['documents_with_amounts'] > 0:
-                formatted += f"\nFinancial Summary:\n"
+            if stats["documents_with_amounts"] > 0:
+                formatted += "\nFinancial Summary:\n"
                 formatted += f"  - Total Amount: ${stats['total_amount']:,.2f}\n"
                 formatted += f"  - Average Amount: ${stats['average_amount']:,.2f}\n"
                 formatted += f"  - Minimum Amount: ${stats['min_amount']:,.2f}\n"
                 formatted += f"  - Maximum Amount: ${stats['max_amount']:,.2f}\n"
 
-            logger.log_tool_use(
-                "document_statistics",
-                {},
-                {"stats": stats}
-            )
+            logger.log_tool_use("document_statistics", {}, {"stats": stats})
 
             return formatted
 
         except Exception as e:
-            error_msg = f"Error getting statistics: {str(e)}"
-            logger.log_tool_use(
-                "document_statistics",
-                {},
-                {"error": error_msg}
-            )
+            error_msg = f"Error getting statistics: {e!s}"
+            logger.log_tool_use("document_statistics", {}, {"error": error_msg})
             return error_msg
 
     return document_statistics
 
 
-def get_all_tools(retriever, logger: ToolLogger) -> List:
+def get_all_tools(retriever, logger: ToolLogger) -> list:
     """
     Get all available tools for the agent.
     """
@@ -338,5 +380,5 @@ def get_all_tools(retriever, logger: ToolLogger) -> List:
         create_calculator_tool(logger),
         create_document_search_tool(retriever, logger),
         create_document_reader_tool(retriever, logger),
-        create_document_statistics_tool(retriever, logger)
+        create_document_statistics_tool(retriever, logger),
     ]
