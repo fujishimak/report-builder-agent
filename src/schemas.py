@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, TypedDict
+from typing import Any, Literal, TypedDict
 
 from pydantic import BaseModel, Field
 
@@ -21,7 +21,7 @@ class DocumentChunk(BaseModel):
 # This schema should include fields for the question, answer, sources, confidence, and timestamp.
 # Refer to README.md Task 1.1 for detailed field requirements.
 class AnswerResponse(BaseModel):
-    """Structured response for Q&A tasks - TO BE IMPLEMENTED"""
+    """Structured response for Q&A tasks"""
 
     question: str = Field(description="The original user question")
     answer: str = Field(description="The generated answer")
@@ -68,13 +68,19 @@ class UpdateMemoryResponse(BaseModel):
 class UserIntent(BaseModel):
     """User intent classification - TO BE IMPLEMENTED"""
 
+    intent_type: Literal["qa", "summarization", "calculation", "unknown"] = Field(
+        description="The classified intent"
+    )
+    confidence: float = Field(description="Confidence in classification")
+    reasoning: str = Field(description="Explanation for the classification")
+
 
 class SessionState(BaseModel):
     """Session state"""
 
     session_id: str
     user_id: str
-    conversation_history: list[TypedDict] = Field(default_factory=lambda: list)
+    conversation_history: list[TypedDict] = Field(default_factory=list)
     document_context: list[str] = Field(
         default_factory=lambda: list, description="Active document IDs"
     )
