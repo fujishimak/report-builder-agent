@@ -1,19 +1,20 @@
-from typing import TypedDict, Annotated, List, Dict, Any, Optional, Literal
+from typing import TypedDict, Annotated, List, Dict, Any, Optional, Literal, cast
 
-from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, MessagesPlaceholder, PromptTemplate
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel
 from langgraph.graph import StateGraph, END
 from langgraph.graph.message import add_messages
-from langgraph.prebuilt import create_react_agent, tools_condition, ToolNode
+from langchain.agents import create_agent
+from langgraph.prebuilt import tools_condition, ToolNode
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage, ToolMessage
 import re
 import operator
-from schemas import (
+from src.schemas import (
     UserIntent, SessionState,
     AnswerResponse, SummarizationResponse, CalculationResponse, UpdateMemoryResponse
 )
-from prompts import get_intent_classification_prompt, get_chat_prompt_template, MEMORY_SUMMARY_PROMPT
+from src.prompts import get_intent_classification_prompt, get_chat_prompt_template, MEMORY_SUMMARY_PROMPT
 
 
 # TODO: The AgentState class is already implemented for you.  Study the
@@ -75,21 +76,40 @@ def classify_intent(state: AgentState, config: RunnableConfig) -> AgentState:
     function executed by appending "classify_intent" to actions_taken.
     """
 
-    llm = config.get("configurable").get("llm")
+    llm = config.get("configurable",{}).get("llm")
     history = state.get("messages", [])
 
     # TODO Configure the llm chat model for structured output
+    structured_llm = llm.with_structured_output(UserIntent)
 
     # TODO Create a formatted prompt with conversation history and user input
+    prompt = get_intent_classification_prompt().invoke({
+        "user_input": state.get("user_input"),
+        "conversation_history": state.get("messages")
+    })
 
-    next_step = "qa"
+    chain = prompt | structured_llm
+
+    intent_type = chain.invoke().get("intent_type","")
+
+    match intent_type:
+        case "qa":
+            next_step = "qa_agent"
+        case "summarization":
+            next_step = "summarization_agent"
+        case "calculation":
+            next_step = "calculation_agent"
+        case _:
+            next_step = "qa_agent"
 
     # TODO: Add conditional logic to set next_step based on intent
 
-    return {
+    return cast(AgentState, {
         "actions_taken": ["classify_intent"],
+        "intent": intent_type,
+        "next_step": next_step
         # TODO: Update state intent and next_step
-    }
+    })
 
 
 def qa_agent(state: AgentState, config: RunnableConfig) -> AgentState:

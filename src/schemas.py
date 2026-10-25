@@ -10,7 +10,7 @@ class DocumentChunk(BaseModel):
     doc_id: str = Field(description="Document identifier")
     content: str = Field(description="The actual text content")
     metadata: dict[str, Any] = Field(
-        default_factory=lambda: dict, description="Additional metadata"
+        default_factory=dict, description="Additional metadata"
     )
     relevance_score: float = Field(
         default=0.0, description="Relevance score for retrieval"
@@ -37,7 +37,7 @@ class SummarizationResponse(BaseModel):
     summary: str = Field(description="The generated summary")
     key_points: list[str] = Field(description="List of key points extracted")
     document_ids: list[str] = Field(
-        default_factory=lambda: list, description="Documents summarized"
+        default_factory=list, description="Documents summarized"
     )
     timestamp: datetime = Field(default_factory=datetime.now)
 
@@ -57,7 +57,7 @@ class UpdateMemoryResponse(BaseModel):
 
     summary: str = Field(description="Summary of the conversation up to this point")
     document_ids: list[str] = Field(
-        default_factory=lambda: list,
+        default_factory=list,
         description="List of documents ids that are relevant to the users last message",
     )
 
@@ -82,7 +82,7 @@ class SessionState(BaseModel):
     user_id: str
     conversation_history: list[TypedDict] = Field(default_factory=list)
     document_context: list[str] = Field(
-        default_factory=lambda: list, description="Active document IDs"
+        default_factory=list, description="Active document IDs"
     )
     created_at: datetime = Field(default_factory=datetime.now)
     last_updated: datetime = Field(default_factory=datetime.now)
