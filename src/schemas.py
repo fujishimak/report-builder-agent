@@ -35,9 +35,15 @@ class AnswerResponse(BaseModel):
 
     question: str = Field(description="The original user question")
     answer: str = Field(description="The generated answer")
-    sources: list[str] = Field(description="List of source document IDs used")
-    confidence: float = Field(description="Confidence score between 0 and 1")
-    timestamp: datetime = Field(description="When the response was generated")
+    sources: list[str] = Field(
+        default_factory=list, description="List of source document IDs used"
+    )
+    confidence: float = Field(
+        ge=0.0, le=1.0, description="Confidence score between 0 and 1"
+    )
+    timestamp: datetime = Field(
+        default_factory=datetime.now, description="When the response was generated"
+    )
 
 
 @register_schema
@@ -50,7 +56,9 @@ class SummarizationResponse(BaseModel):
     document_ids: list[str] = Field(
         default_factory=list, description="Documents summarized"
     )
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(
+        default_factory=datetime.now, description="When the response was generated"
+    )
 
 
 @register_schema
@@ -61,7 +69,9 @@ class CalculationResponse(BaseModel):
     result: float = Field(description="The calculated result")
     explanation: str = Field(description="Step-by-step explanation")
     units: str | None = Field(default=None, description="Units if applicable")
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(
+        default_factory=datetime.now, description="When the calculation was performed"
+    )
 
 
 @register_schema
@@ -85,7 +95,9 @@ class UserIntent(BaseModel):
     intent_type: Literal["qa", "summarization", "calculation", "unknown"] = Field(
         description="The classified intent"
     )
-    confidence: float = Field(description="Confidence in classification")
+    confidence: float = Field(
+        ge=0.0, le=1.0, description="Confidence in classification"
+    )
     reasoning: str = Field(description="Explanation for the classification")
 
 
@@ -99,5 +111,9 @@ class SessionState(BaseModel):
     document_context: list[str] = Field(
         default_factory=list, description="Active document IDs"
     )
-    created_at: datetime = Field(default_factory=datetime.now)
-    last_updated: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(
+        default_factory=datetime.now, description="When the session was created"
+    )
+    last_updated: datetime = Field(
+        default_factory=datetime.now, description="When the session was last updated"
+    )
