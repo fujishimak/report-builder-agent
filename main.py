@@ -112,7 +112,7 @@ def main():
                     print(result["response"])
                 if result.get("intent"):
                     intent = result["intent"]
-                    print(f"\nINTENT: {intent}", color="green")
+                    print(f"\nINTENT: {intent['intent_type']}", color="green")
                 if result.get("active_documents"):
                     print(
                         f"\nSOURCES: {', '.join(result['active_documents'])}",

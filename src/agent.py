@@ -102,12 +102,14 @@ def classify_intent(state: AgentState, config: RunnableConfig) -> AgentState:
 
     chain = prompt | structured_llm
 
-    intent_type = chain.invoke(
+    intent = chain.invoke(
         {
             "user_input": state.get("user_input"),
             "conversation_history": state.get("messages"),
         }
-    ).intent_type
+    )
+
+    intent_type = intent.intent_type
 
     match intent_type:
         case "qa":
@@ -125,7 +127,7 @@ def classify_intent(state: AgentState, config: RunnableConfig) -> AgentState:
         AgentState,
         {
             "actions_taken": ["classify_intent"],
-            "intent": intent_type,
+            "intent": intent,
             "next_step": next_step,
             # TODO: Update state intent and next_step
         },
