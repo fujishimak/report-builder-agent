@@ -84,7 +84,20 @@ def create_calculator_tool(logger: ToolLogger):
 
         # Allow only numbers, basic math operators and spaces
         if re.match(r"^[\d\s.+\-*/()]+$", expression):
-            result = eval(expression, clean_globals)
+            try:
+                result = eval(expression, clean_globals)
+            except Exception as e:
+                logger.log_tool_use(
+                    tool_name="calculator",
+                    input_data={"expression": expression},
+                    output={
+                        "result": -1,
+                        "success": False,
+                        "msg": f"{e}",
+                    },
+                )
+                return str(-1)
+
             logger.log_tool_use(
                 tool_name="calculator",
                 input_data={"expression": expression},
