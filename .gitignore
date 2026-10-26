@@ -28,8 +28,6 @@ pyvenv.cfg
 
 # Project specific
 .env
-sessions/
-logs/
 *.log
 
 # OS
