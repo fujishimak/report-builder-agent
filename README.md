@@ -1,10 +1,10 @@
-# DocDacity Intelligent Document Assistant
+# Intelligent Document Assistant
 
 A multi-intent document assistant built with **LangGraph**, **LangChain** and **OpenAI**. It classifies what the user wants (Q&A, summarization or calculation), routes the request to a specialised tool-using agent, returns a **schema-validated structured response**, and keeps a **running memory** of the conversation and the documents in play.
 
 ## Contents
 
-- [DocDacity Intelligent Document Assistant](#docdacity-intelligent-document-assistant)
+- [Intelligent Document Assistant](#intelligent-document-assistant)
   - [Contents](#contents)
   - [Quick start](#quick-start)
     - [Configuration](#configuration)
