@@ -30,7 +30,8 @@ A multi-intent document assistant built with **LangGraph**, **LangChain** and **
 **Requirements:** Python 3.13+ and an OpenAI-compatible API key.
 
 ```bash
-uv sync                          # or: pip install -e .
+uv sync                          # uses pyproject.toml + uv.lock
+# or: pip install -r requirements.txt
 cp _env.example .env             # then add your API key
 python main.py
 ```
@@ -73,21 +74,34 @@ SESSION_STORAGE_PATH=./sessions
 ### Project layout
 
 ```
-main.py            # interactive CLI
-src/
-  assistant.py     # sessions, LLM setup, process_message()
-  agent.py         # AgentState, graph nodes, create_workflow()
-  prompts.py       # intent, per-agent and memory prompts
-  schemas.py       # Pydantic response models
-  tools.py         # calculator, search, reader, statistics + ToolLogger
-  retrieval.py     # in-memory sample documents and retrieval
-logs/              # tool-call logs
-sessions/          # one JSON file per session
+report-builder-agent/
+├── docs/
+│   └── langgraph_agent_architecture.png   # architecture diagram
+├── logs/                                  # tool-call logs (created at runtime)
+├── sessions/                              # one file per session (created at runtime)
+├── src/
+│   ├── __init__.py
+│   ├── agent.py       # AgentState, graph nodes, create_workflow()
+│   ├── assistant.py   # sessions, LLM setup, process_message()
+│   ├── prompts.py     # intent, per-agent and memory prompts
+│   ├── retrieval.py   # in-memory sample documents and retrieval
+│   ├── schemas.py     # Pydantic response models
+│   └── tools.py       # calculator, search, reader, statistics + ToolLogger
+├── main.py            # interactive CLI
+├── pyproject.toml
+├── requirements.txt
+├── uv.lock
+└── README.md
 ```
 
 ---
 
 ## Architecture
+
+![LangGraph agent architecture](docs/langgraph_agent_architecture.png)
+
+<details>
+<summary>Text version of the diagram</summary>
 
 ```mermaid
 flowchart TD
@@ -100,6 +114,8 @@ flowchart TD
     E --> F
     F --> G([END])
 ```
+
+</details>
 
 | Node | What it does |
 |---|---|
